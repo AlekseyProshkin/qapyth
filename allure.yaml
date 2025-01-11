@@ -1,0 +1,5 @@
+
+allure:
+  categories:
+    - name: Failed tests
+      matchedStatuses: [failed, broken]
