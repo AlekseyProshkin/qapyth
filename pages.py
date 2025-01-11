@@ -1,51 +1,41 @@
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-from selenium.webdriver.remote.webelement import WebElement
-from selenium.webdriver.support import expected_conditions
-from selenium.webdriver.support.wait import WebDriverWait
 
-
-class BasePage:
-    def __init__(self, driver, timeout=10):
+class LoginPage:
+    def __init__(self, driver):
         self.driver = driver
-        self.timeout = int(timeout)
-        self.wait = WebDriverWait(driver, timeout)
-        self.page_url = ''
 
-    def find_element(self, by: By or int, value: str) -> WebElement:
-        return self.wait.until(expected_conditions.visibility_of_element_located((by, value)),
-                               message=f'Элемент {by, value} не найден')
+    def input_login(self, username):
+        login_field = WebDriverWait(self.driver, 10).until(
+            EC.presence_of_element_located((By.ID, "user-name"))
+        )
+        login_field.clear()
+        login_field.send_keys(username)
 
-    def find_elements(self, by: By or int, value: str) -> [WebElement]:
-        return self.wait.until(expected_conditions.visibility_of_all_elements_located((by, value)),
-                               message=f'Элементы {by, value} не найдены')
+    def input_password(self, password):
+        password_field = self.driver.find_element(By.ID, "password")
+        password_field.clear()
+        password_field.send_keys(password)
 
-    def get_current_url(self) -> str:
-        return self.driver.current_url
+    def login_button_click(self):
+        login_button = self.driver.find_element(By.ID, "login-button")
+        login_button.click()
 
+    def is_error_message_displayed(self, expected_message):
+        error_message = self.driver.find_element(By.CSS_SELECTOR, "h3[data-test='error']")
+        return error_message.is_displayed() and expected_message in error_message.text
 
-class LoginPage(BasePage):
+class InventoryPage:
     def __init__(self, driver):
-        super().__init__(driver, timeout=60)
+        self.driver = driver
 
-        self.login = (By.ID, 'user-name')           #Локатор по ID для элемента строки ввода login
-        self.password = (By.ID, 'password')         #Локатор по ID для элемента строки ввода password
-        self.login_btn = (By.NAME, 'login-button')  #Локатор по Name для элемента кнопка Login
-
-    def input_login(self, login: str) -> None:
-        self.find_element(*self.login).send_keys(login)
-
-    def input_password(self, password: str) -> None:
-        self.find_element(*self.password).send_keys(password)
-
-    def login_button_click(self) -> None:
-        self.find_element(*self.login_btn).click()
-
-
-class InventoryPage(BasePage):
-    def __init__(self, driver):
-        super().__init__(driver, timeout=60)
-
-        self.page_url = 'https://www.saucedemo.com/inventory.html'
-
-    def check_inventory_page_open(self) -> bool:
-        return self.get_current_url() == self.page_url
+    def check_inventory_page_open(self):
+        try:
+            title = WebDriverWait(self.driver, 20).until(
+                EC.visibility_of_element_located((By.CSS_SELECTOR, ".title"))
+            )
+            return title.text.strip().lower() == "products"
+        except Exception as e:
+            print(f"Ошибка при проверке страницы инвентаря: {e}")
+            return False
